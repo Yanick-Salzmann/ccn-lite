@@ -405,5 +405,39 @@ ccnl_nfn_resolve_thunk(struct ccnl_relay_s *ccnl, struct configuration_s *config
     }
     return NULL;
 }
+
+
+int
+krivine_get_single_parameter(char *parameter, struct term_s *term){
+
+    if(term->m){
+        krivine_get_single_parameter(parameter, term->m);
+    }
+    if(term->n){
+       if(!term->n->v)strcat(parameter, " (");
+       krivine_get_single_parameter(parameter, term->n);
+       if(!term->n->v)strcat(parameter, ")");
+    }
+    if(term->v){
+        if(parameter[0] != '\0' && parameter[strlen(parameter)-1] != '(')  strcat(parameter, " ");
+        strcat(parameter, term->v);
+    }
+
+    return 0;
+}
+
+int
+krivine_get_parameters(char **parameter, int depth, struct term_s *term){
+
+    int pos = depth;
+    if(term->m){
+        depth = krivine_get_parameters(parameter, depth+1, term->m);
+    }
+    if(term->n){
+        krivine_get_single_parameter(parameter[pos], term->n);
+    }
+    return depth;
+}
+
 #endif //USE_UTIL
 #endif //KRIVINE_COMMON_C

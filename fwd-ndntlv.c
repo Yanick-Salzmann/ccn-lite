@@ -180,8 +180,8 @@ ccnl_ndntlv_forwarder(struct ccnl_relay_s *relay, struct ccnl_face_s *from,
 #ifdef CCNL_NFN_MONITOR
                 char monitorpacket[CCNL_MAX_PACKET_SIZE];
                 int l = create_packet_log(inet_ntoa(from->peer.ip4.sin_addr),
-                ntohs(from->peer.ip4.sin_port),
-                c->name, (char*)c->content, c->contentlen, monitorpacket);
+                            ntohs(from->peer.ip4.sin_port),
+                            c->name, (char*)c->content, c->contentlen, monitorpacket);
                 sendtomonitor(relay, monitorpacket, l);
 #endif
                 ccnl_face_enqueue(relay, from, buf_dup(c->pkt));

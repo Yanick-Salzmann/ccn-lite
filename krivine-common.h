@@ -76,6 +76,14 @@ struct configuration_s{
     double thunk_time;
 };
 
+struct term_s {
+    char *v;
+    struct term_s *m, *n;
+    // if m is 0, we have a var  v
+    // is both m and n are not 0, we have an application  (M N)
+    // if n is 0, we have a lambda term  @v M
+};
+
 struct thunk_s{
     struct thunk_s *next, *prev;
     char thunkid[10];
