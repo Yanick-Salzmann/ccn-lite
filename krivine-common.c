@@ -439,5 +439,15 @@ krivine_get_parameters(char **parameter, int depth, struct term_s *term){
     return depth;
 }
 
+int krivine_get_num_of_parameter(struct term_s *term){
+    struct term_s *t = term;
+    int num = 0;
+    while((t=t->m) != NULL){
+        ++num;
+    }
+    return num;
+
+}
+
 #endif //USE_UTIL
 #endif //KRIVINE_COMMON_C

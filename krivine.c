@@ -520,21 +520,26 @@ normal:
             //exit here and resume here... strategy to be local available? put code from below to here?
 
             t = parseKRIVINE(0, &cp);
-            char **test = (char**)malloc(1024*sizeof(char*));
+            config->fox_state->num_of_params = krivine_get_num_of_parameter(t);
+
+            char **params = (char**)malloc(config->fox_state->num_of_params * sizeof(char*));
             int i;
-            for(i = 0; i < 1024; ++i){
-                test[i] = (char*)malloc(1024*sizeof(char));
-                memset(test[i], 0, 1024);
+            for(i = 0; i < config->fox_state->num_of_params; ++i){
+                params[i] = (char*)malloc(1024*sizeof(char));
+                memset(params[i], 0, 1024);
             }
 
-            int numofparams = krivine_get_parameters(test, 0, t);
+            krivine_get_parameters(params, 0, t);
 
-            DEBUGMSG(99,"NumOfParames: %d\n", numofparams);
-            for(i = 0; i < numofparams; ++i){
-                DEBUGMSG(99, "Parameter: %d %s\n", i, test[i]);
+            DEBUGMSG(99,"NumOfParames: %d\n", config->fox_state->num_of_params);
+            for(i = 0; i < config->fox_state->num_of_params; ++i){
+                DEBUGMSG(99, "Parameter: %d %s\n", i, params[i]);
             }
-            return 0;
 
+            //TODO: params in prefix schreiben!!!
+
+ //continue2:
+            cp = "2"; //TODO: ergebnis in CP schreiben!
 
         }
         
