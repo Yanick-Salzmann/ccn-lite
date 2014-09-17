@@ -541,6 +541,8 @@ normal:
  //continue2:
             cp = "2"; //TODO: ergebnis in CP schreiben!
 
+            //TODO IMPORTANT ASPECT TO TRY, if no result return, continue by with the reduction!!!!!!!!!!!!!!!
+
         }
         
     //check if term can be made available, if yes enter it as a var
