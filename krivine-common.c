@@ -129,15 +129,9 @@ add_local_computation_components(struct configuration_s *config){
     int i = 0;
     char *comp = malloc(CCNL_MAX_PACKET_SIZE);
     struct ccnl_prefix_s *ret;
-    int complen = sprintf(comp, "call %d", config->fox_state->num_of_params);
-    for(i = 0; i < config->fox_state->num_of_params; ++i){
-        if(config->fox_state->params[i]->type == STACK_TYPE_INT)
-            complen += sprintf(comp+complen, " %d", *((int*)config->fox_state->params[i]->content));
-        else if(config->fox_state->params[i]->type == STACK_TYPE_PREFIX)
-            complen += sprintf(comp+complen, " %s", ccnl_prefix_to_path((struct ccnl_prefix_s*)config->fox_state->params[i]->content));
-#ifndef USE_UTIL
-        else DEBUGMSG(1, "Invalid type %d\n", config->fox_state->params[i]->type);
-#endif
+    int complen = sprintf(comp, "call %d", config->fox_state->num_of_params-1);
+    for(i = 1; i < config->fox_state->num_of_params; ++i){
+            complen += sprintf(comp+complen, " %s", config->fox_state->params[i]);
     }
 
     i = 0;
@@ -170,21 +164,13 @@ int
 createComputationString(struct configuration_s *config, int parameter_num, unsigned char *comp){
 
     int i;
-    int complen = sprintf((char*)comp, "(@x call %d", config->fox_state->num_of_params);
-    for(i = 0; i < config->fox_state->num_of_params; ++i){
-        if(parameter_num == i){
+    int complen = sprintf((char*)comp, "(@x call %d", config->fox_state->num_of_params-1);
+    for(i = 1; i < config->fox_state->num_of_params; ++i){
+        if(config->fox_state->it_routable_param == i){
             complen += sprintf((char*)comp + complen, " x");
         }
         else{
-            //complen += sprintf((char*)comp + complen, "%s ", config->fox_state->params[j]);
-
-            if(config->fox_state->params[i]->type == STACK_TYPE_INT)
-                complen += sprintf((char *)comp+complen, " %d", *((int*)config->fox_state->params[i]->content));
-            else if(config->fox_state->params[i]->type == STACK_TYPE_PREFIX)
-                complen += sprintf((char *)comp+complen, " %s", ccnl_prefix_to_path((struct ccnl_prefix_s*)config->fox_state->params[i]->content));
-#ifndef USE_UTIL
-            else DEBUGMSG(1, "Invalid type in createComputationString() %d\n", config->fox_state->params[i]->type);
-#endif
+            complen += sprintf((char *)comp+complen, " %s", config->fox_state->params[i]);
         }
     }
     complen += sprintf((char*)comp + complen, ")");
@@ -198,7 +184,7 @@ create_prefix_from_name(char* namestr)
     char *cp = NULL;
     char *prefixcomp[CCNL_MAX_NAME_COMP];
     struct ccnl_prefix_s *prefix = malloc(sizeof(struct ccnl_prefix_s));
-    cp = strtok(namestr, "/");
+    cp = strtok(strdup(namestr), "/");
     
     while (i < (CCNL_MAX_NAME_COMP - 1) && cp) {
         prefixcomp[i++] = (char *)cp;
@@ -242,20 +228,8 @@ create_prefix_for_content_on_result_stack(struct ccnl_relay_s *ccnl, struct conf
     int it, len = 0;
     len += sprintf((char *)name->comp[0]+len, "call %d", config->fox_state->num_of_params);
     for(it = 0; it < config->fox_state->num_of_params; ++it){
-
-        struct stack_s *stack = config->fox_state->params[it];
-        if(stack->type == STACK_TYPE_PREFIX){
-            char *pref_str = ccnl_prefix_to_path((struct ccnl_prefix_s*)stack->content);
-            len += sprintf((char*)name->comp[0]+len, " %s", pref_str);
-        }
-        else if(stack->type == STACK_TYPE_INT){
-            len += sprintf((char*)name->comp[0]+len, " %d", *(int*)stack->content);
-        }
-        else{
-            DEBUGMSG(1, "Invalid stack type\n");
-            return NULL;
-        }
-
+        char *pref_str = config->fox_state->params[it];
+        len += sprintf((char*)name->comp[0]+len, " %s", pref_str);
     }
     name->complen[0] = len;
     return name;
@@ -427,14 +401,14 @@ krivine_get_single_parameter(char *parameter, struct term_s *term){
 }
 
 int
-krivine_get_parameters(char **parameter, int depth, struct term_s *term){
+krivine_get_parameters(char **parameter, int depth, struct term_s *term, int num_of_params){
 
     int pos = depth;
     if(term->m){
-        depth = krivine_get_parameters(parameter, depth+1, term->m);
+        depth = krivine_get_parameters(parameter, depth+1, term->m, num_of_params);
     }
     if(term->n){
-        krivine_get_single_parameter(parameter[pos], term->n);
+        krivine_get_single_parameter(parameter[num_of_params-pos-1], term->n);
     }
     return depth;
 }

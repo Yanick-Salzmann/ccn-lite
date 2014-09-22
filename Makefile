@@ -14,7 +14,7 @@ CCNLCFLAGS=-O3 -Wall -Werror -pedantic -std=c99 -g
 
 
 # Linux flags with support to compile kernel module
-LINUX_CFLAGS=-D_XOPEN_SOURCE=500 -D_XOPEN_SOURCE_EXTENDED -Dlinux -O0
+LINUX_CFLAGS=-D_XOPEN_SOURCE=500 -D_XOPEN_SOURCE_EXTENDED -Dlinux 
 
 # OSX, ignore deprecated warnings for libssl
 OSX_CFLAGS=-Wno-error=deprecated-declarations

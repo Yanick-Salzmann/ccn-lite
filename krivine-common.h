@@ -46,7 +46,7 @@ struct prefix_mapping_s{
 
 struct fox_machine_state_s{
     int num_of_params;
-    struct stack_s **params;
+    char **params;
     int it_routable_param;
     int thunk_request;
     int num_of_required_thunks;

@@ -283,8 +283,8 @@ int choose_parameter(struct configuration_s *config){
     int param_to_choose = config->fox_state->it_routable_param;
     int num;
     DEBUGMSG(99, "choose_parameter(%d)\n", param_to_choose);
-    for(num = config->fox_state->num_of_params-1; num >=0; --num){
-        if(config->fox_state->params[num]->type == STACK_TYPE_PREFIX){
+    for(num = 0; num <config->fox_state->num_of_params; ++num){
+        if(iscontent(config->fox_state->params[num])){
             --param_to_choose;
             if(param_to_choose <= 0){
                 return num;
@@ -461,89 +461,168 @@ normal:
         return strdup(dummybuf);
     }
     if (!strncmp(prog, "RESOLVENAME(", 12)) {
-	char res[1000];
-	memset(res,0,sizeof(res));
-        if (pending)
-	    cp = pending-1;
-	else
-	    cp = prog + strlen(prog) - 1;
+    char res[1000];
+    memset(res,0,sizeof(res));
+    if (pending)
+        cp = pending-1;
+    else
+        cp = prog + strlen(prog) - 1;
         len = cp - p;
         cp = malloc(len);
-	memcpy(cp, p+1, len-1);
-	cp[len-1] = '\0';
-	DEBUGMSG(2, "---to do: resolveNAME <%s>\n", cp);
+    memcpy(cp, p+1, len-1);
+    cp[len-1] = '\0';
+    DEBUGMSG(2, "---to do: resolveNAME <%s>\n", cp);
 
-        //function definition
-        if(!strncmp(cp, "let", 3)){
-            DEBUGMSG(99, "Function definition: %s\n", cp);
-            strcpy(res, cp+3);
-            int i, end = 0, pendinglength, namelength, lambdalen;
-            char *h, *name, *lambda_expr, *resolveterm;
-            for(i = 0; i < strlen(res); ++i){
-                if(!strncmp(res+i, "endlet", 6)){
-                    end = i;
-                    break;
-                }
+    //function definition
+    if(!strncmp(cp, "let", 3)){
+        DEBUGMSG(99, "Function definition: %s\n", cp);
+        strcpy(res, cp+3);
+        int i, end = 0, pendinglength, namelength, lambdalen;
+        char *h, *name, *lambda_expr, *resolveterm;
+        for(i = 0; i < strlen(res); ++i){
+            if(!strncmp(res+i, "endlet", 6)){
+                end = i;
+                break;
             }
-            pendinglength = strlen(res+end) + strlen("RESOLVENAME()");
-            h = strchr(cp, '=');
-            namelength = h - cp;
-            
-            
-            lambda_expr = malloc(strlen(h));
-            name = malloc(namelength);
-            pending = malloc(pendinglength);
-            
-            memset(pending, 0, pendinglength);
-            memset(name, 0, namelength);
-            memset(lambda_expr, 0, strlen(h));
-            
-            sprintf(pending, "RESOLVENAME(%s)", res+end+7); //add 7 to overcome endlet
-            
-            memcpy(name, cp+3, namelength-3); //copy name without let and endlet
-            trim(name);
-   
-            lambdalen = strlen(h)-strlen(pending)+11-6;
-            memcpy(lambda_expr, h+1, lambdalen); //copy lambda expression without =
-            trim(lambda_expr);
-            resolveterm = malloc(strlen("RESOLVENAME()")+strlen(lambda_expr));
-            sprintf(resolveterm, "RESOLVENAME(%s)", lambda_expr);
-            
-            struct closure_s *cl = new_closure(resolveterm, NULL);
-            add_to_environment(&config->env, name, cl);
-            
-            return pending;
         }
-        if(!strncmp(cp, "call", 4)){
-            DEBUGMSG(99, "CALL_CP (is this the wanted term?): %s\n", cp);
+        pendinglength = strlen(res+end) + strlen("RESOLVENAME()");
+        h = strchr(cp, '=');
+        namelength = h - cp;
 
-            //exit here and resume here... strategy to be local available? put code from below to here?
 
-            t = parseKRIVINE(0, &cp);
-            config->fox_state->num_of_params = krivine_get_num_of_parameter(t);
+        lambda_expr = malloc(strlen(h));
+        name = malloc(namelength);
+        pending = malloc(pendinglength);
 
-            char **params = (char**)malloc(config->fox_state->num_of_params * sizeof(char*));
-            int i;
-            for(i = 0; i < config->fox_state->num_of_params; ++i){
-                params[i] = (char*)malloc(1024*sizeof(char));
-                memset(params[i], 0, 1024);
-            }
+        memset(pending, 0, pendinglength);
+        memset(name, 0, namelength);
+        memset(lambda_expr, 0, strlen(h));
 
-            krivine_get_parameters(params, 0, t);
+        sprintf(pending, "RESOLVENAME(%s)", res+end+7); //add 7 to overcome endlet
 
-            DEBUGMSG(99,"NumOfParames: %d\n", config->fox_state->num_of_params);
-            for(i = 0; i < config->fox_state->num_of_params; ++i){
-                DEBUGMSG(99, "Parameter: %d %s\n", i, params[i]);
-            }
+        memcpy(name, cp+3, namelength-3); //copy name without let and endlet
+        trim(name);
 
-            //TODO: params in prefix schreiben!!!
+        lambdalen = strlen(h)-strlen(pending)+11-6;
+        memcpy(lambda_expr, h+1, lambdalen); //copy lambda expression without =
+        trim(lambda_expr);
+        resolveterm = malloc(strlen("RESOLVENAME()")+strlen(lambda_expr));
+        sprintf(resolveterm, "RESOLVENAME(%s)", lambda_expr);
 
- //continue2:
-            cp = "2"; //TODO: ergebnis in CP schreiben!
+        struct closure_s *cl = new_closure(resolveterm, NULL);
+        add_to_environment(&config->env, name, cl);
 
-            //TODO IMPORTANT ASPECT TO TRY, if no result return, continue by with the reduction!!!!!!!!!!!!!!!
+        return pending;
+    }
 
+
+    //FOX
+    if(!strncmp(cp, "call", 4)){
+
+        //char *ccp = strdup(cp);
+        int local_search = 0;
+
+        if(*restart) {
+            *restart = 0;
+            local_search = 1;
+            goto recontinue;
         }
+
+        //exit here and resume here... strategy to be local available? put code from below to here?
+        //read parameter
+        t = parseKRIVINE(0, &cp);
+        config->fox_state->num_of_params = krivine_get_num_of_parameter(t);
+        config->fox_state->params = (char**)malloc(config->fox_state->num_of_params * sizeof(char*));
+        int i;
+        for(i = 0; i < config->fox_state->num_of_params; ++i){
+            config->fox_state->params[i] = (char*)malloc(1024*sizeof(char));
+            memset(config->fox_state->params[i], 0, 1024);
+        }
+        krivine_get_parameters(config->fox_state->params, 0, t,  config->fox_state->num_of_params);
+        DEBUGMSG(99,"NumOfParames: %d\n", config->fox_state->num_of_params);
+        for(i = 0; i < config->fox_state->num_of_params; ++i){
+            DEBUGMSG(99, "Parameter: %d %s\n", i, config->fox_state->params[i]);
+        }
+
+        //choose parameter here
+        config->fox_state->it_routable_param = 0;
+        int parameter_number = 0;
+        struct ccnl_content_s *c = NULL;
+recontinue:
+        if(local_search){
+            parameter_number = choose_parameter(config);
+            struct ccnl_prefix_s *parameter_pref = create_prefix_from_name(config->fox_state->params[parameter_number]);
+            struct ccnl_prefix_s *pref = create_namecomps(ccnl, config, parameter_number, thunk_request, parameter_pref);
+            c = ccnl_nfn_local_content_search(ccnl, config, pref); //search for a result
+            set_propagate_of_interests_to_1(ccnl, pref); //TODO Check? //TODO remove interest here?
+            if(c) goto handlecontent;
+        }
+        //result was not delivered --> choose next parameter
+        ++config->fox_state->it_routable_param;
+        parameter_number = choose_parameter(config);
+        if(parameter_number < 0) goto local_compute; //no more parameter --> no result found, can try a local computation
+        //create new prefix with name components!!!!
+        struct ccnl_prefix_s *parameter_pref = create_prefix_from_name(config->fox_state->params[parameter_number]);
+        struct ccnl_prefix_s *pref = create_namecomps(ccnl, config, parameter_number, thunk_request, parameter_pref);
+        c = ccnl_nfn_local_content_search(ccnl, config, pref);
+        if(c) goto handlecontent;
+
+        //Result not in cache, search over the network
+       struct ccnl_interest_s *interest = mkInterestObject(ccnl, config, pref);
+       ccnl_interest_propagate(ccnl, interest);
+       //wait for content, return current program to continue later
+       *halt = -1; //set halt to -1 for async computations
+       if(*halt < 0) return prog;
+
+local_compute:
+       if(config->local_done){
+           return NULL;
+       }
+       config->local_done = 1;
+       pref = add_local_computation_components(config);
+       interest = mkInterestObject(ccnl, config, pref);
+       ccnl_interest_propagate(ccnl, interest);
+
+handlecontent: //if result was found ---> handle it
+       if(c){
+#ifdef CCNL_NACK
+           if(!strncmp((char*)c->content, ":NACK", 5)){
+               DEBUGMSG(99, "NACK RECEIVED, going to next parameter\n");
+                ++config->fox_state->it_routable_param;
+               return prog;
+           }
+#endif
+           if(thunk_request){ //if thunk_request push thunkid on the stack
+
+           /*    --(*num_of_required_thunks);
+               char *thunkid = ccnl_nfn_add_thunk(ccnl, config, c->name);
+               char *time_required = (char *)c->content;
+               int thunk_time = strtol(time_required, NULL, 10);
+               thunk_time = thunk_time > 0 ? thunk_time : NFN_DEFAULT_WAITING_TIME;
+               config->thunk_time = config->thunk_time > thunk_time ? config->thunk_time : thunk_time;
+               DEBUGMSG(99, "Got thunk %s, now %d thunks are required\n", thunkid, *num_of_required_thunks);
+               push_to_stack(&config->result_stack, thunkid, STACK_TYPE_THUNK);
+               if( *num_of_required_thunks <= 0){
+                   DEBUGMSG(99, "All thunks are available\n");
+                   ccnl_nfn_reply_thunk(ccnl, config);
+               }*/
+           }
+           //else{
+
+           if(isdigit(*c->content)){
+               cp = (char*)c->content;
+           }
+           else{
+
+               struct ccnl_prefix_s *name = create_prefix_for_content_on_result_stack(ccnl, config);
+               cp = ccnl_prefix_to_path(name);
+           }
+       }
+    }
+       //cp = "2"; //TODO: ergebnis in CP schreiben!
+
+       //TODO IMPORTANT ASPECT TO TRY, if no result return, continue by with the reduction!!!!!!!!!!!!!!!
+
         
     //check if term can be made available, if yes enter it as a var
 	//try with searching in global env for an added term!
@@ -726,7 +805,7 @@ normal:
         }
         return pending+1;
     }
-    if(!strncmp(prog, "OP_CALL", 7)){
+    /*if(!strncmp(prog, "OP_CALL", 7)){
         struct stack_s *h;
         int i, offset;
         char name[5];
@@ -875,7 +954,7 @@ handlecontent: //if result was found ---> handle it
         }        
         DEBUGMSG(99, "Pending: %s\n", pending+1);
         return pending+1;
-    }
+    }*/
     
     if(!strncmp(prog, "halt", 4)){
 	*halt = 1;
