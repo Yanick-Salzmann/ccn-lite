@@ -624,9 +624,9 @@ getPrefix(unsigned char *data, int datalen, int *suite)
         prefix = getNDNTLVPrefix(data, datalen);
         break;
 
-	default:
-		DEBUGMSG(ERROR, "?unknown packet?\n");
-		return 0;
+    default:
+        DEBUGMSG(ERROR, "?unknown packet?\n");
+        return 0;
     }
 
     return prefix;

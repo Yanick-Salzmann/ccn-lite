@@ -100,8 +100,8 @@ ccnl_ndntlv_extract(int hdrlen,
         *content = NULL;
 
 	p = ccnl_prefix_new(CCNL_SUITE_NDNTLV, CCNL_MAX_NAME_COMP);
-	if (!p)
-		return NULL;
+    if (!p)
+        return NULL;
     p->compcnt = 0;
 
     oldpos = *data - start;
