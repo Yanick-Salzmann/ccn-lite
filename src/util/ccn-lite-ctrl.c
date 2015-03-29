@@ -599,7 +599,7 @@ getNDNTLVPrefix(unsigned char *data, int datalen){
 struct ccnl_prefix_s*
 getPrefix(unsigned char *data, int datalen, int *suite)
 {
-    struct ccnl_prefix_s *prefix;
+    struct ccnl_prefix_s *prefix = NULL;
     int skip;
 
     *suite = ccnl_pkt2suite(data, datalen, &skip);
@@ -623,6 +623,10 @@ getPrefix(unsigned char *data, int datalen, int *suite)
     case CCNL_SUITE_NDNTLV: 
         prefix = getNDNTLVPrefix(data, datalen);
         break;
+
+	default:
+		DEBUGMSG(ERROR, "?unknown packet?\n");
+		return 0;
     }
 
     return prefix;

@@ -38,7 +38,7 @@ main(int argc, char *argv[])
     //    char *witness = 0;
     unsigned char out[65*1024];
     char *publisher = 0;
-    char *infname = 0, *outdirname = 0, *outfname;
+    char *infname = 0, *outdirname = 0, *outfname = NULL;
     int f, fout, contentlen = 0, opt, plen;
     int suite = CCNL_SUITE_DEFAULT;
     int chunk_size = CCNL_MAX_CHUNK_SIZE;
